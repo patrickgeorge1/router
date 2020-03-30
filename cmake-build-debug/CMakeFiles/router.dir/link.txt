@@ -1,0 +1,1 @@
+/usr/bin/cc -g   CMakeFiles/router.dir/list.c.o CMakeFiles/router.dir/queue.c.o CMakeFiles/router.dir/router.c.o CMakeFiles/router.dir/skel.c.o  -o router 

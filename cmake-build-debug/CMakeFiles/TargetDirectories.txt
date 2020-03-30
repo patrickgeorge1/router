@@ -1,0 +1,3 @@
+/home/patrickgeorge1/Desktop/router/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/patrickgeorge1/Desktop/router/cmake-build-debug/CMakeFiles/router.dir
+/home/patrickgeorge1/Desktop/router/cmake-build-debug/CMakeFiles/edit_cache.dir
