@@ -1,0 +1,65 @@
+
+
+ce cautam eu ---->    Reply     ---->  Router 
+
+	enth (mac): 
+		source   == ala pe care l cautam
+		dest     == ff.ff.ff.ff.ff.ff
+
+	arp (ip + mac):
+		source_mac   ==  ala pe care l cautam
+		source_ip    ==  ala pe care l cautam
+		dest_mac     ==  ff.ff.ff.ff.ff.ff
+		dest_ip      ==  router
+
+
+
+
+
+Router ---->    Reply     ---->  host 
+	
+	enth (mac): 
+		source   == mac router  get_interface_mac(m->interface, &save)
+		*dest     == ce am primit in reply pe enth source
+
+	arp (ip + mac):
+		source_mac   ==  mac router  get_interface_mac(m->interface, &save)
+		source_ip    ==  ip router  get_interface_ip(m->interface, &m)
+
+		*dest_mac     ==  ce am primit in reply pe enth source
+		*dest_ip      ==  ce am primit in reply pe arp source ip
+
+
+
+
+
+
+
+host ---->    Request     ---->  Router
+
+	enth (mac):
+		source   == host
+		dest     == ff.ff.ff.ff.ff.ff
+
+	arp (ip + mac):
+		source_mac   ==  host
+		source_ip    ==  host
+		dest_mac     ==  ff.ff.ff.ff.ff.ff
+		dest_ip      ==  target
+
+
+
+
+
+Router ---->    Braodcast     ---->  pe cine caut eu
+
+	enth (mac):
+		source   == router
+		*dest     == ff.ff.ff.ff.ff
+
+	arp (ip + mac):
+		source_mac   ==  mac router  get_interface_mac(m->interface, &save)
+		source_ip    ==  ip router  get_interface_ip(m->interface, &m)
+
+		*dest_mac     ==  ff.ff.ff.ff.ff
+		*dest_ip      ==  target

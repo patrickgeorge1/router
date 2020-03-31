@@ -95,10 +95,16 @@
 		<Unit filename="/home/patrickgeorge1/Desktop/router/checker.py">
 			<Option target="router"/>
 		</Unit>
+		<Unit filename="/home/patrickgeorge1/Desktop/router/include/arp.h">
+			<Option target="router"/>
+		</Unit>
 		<Unit filename="/home/patrickgeorge1/Desktop/router/include/list.h">
 			<Option target="router"/>
 		</Unit>
 		<Unit filename="/home/patrickgeorge1/Desktop/router/include/queue.h">
+			<Option target="router"/>
+		</Unit>
+		<Unit filename="/home/patrickgeorge1/Desktop/router/include/route_table.h">
 			<Option target="router"/>
 		</Unit>
 		<Unit filename="/home/patrickgeorge1/Desktop/router/include/skel.h">

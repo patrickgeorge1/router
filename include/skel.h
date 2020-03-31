@@ -31,6 +31,9 @@
  */
 #define MAX_LEN 1600
 #define ROUTER_NUM_INTERFACES 4
+#define IP_OFF (sizeof(struct ether_header))   // 14
+#define ICMP_OFF (IP_OFF + sizeof(struct iphdr))  // 34
+#define ETH_OFF (sizeof(struct ether_header)) // 34
 
 #define DIE(condition, message) \
 	do { \
