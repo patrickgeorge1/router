@@ -98,6 +98,9 @@
 		<Unit filename="/home/patrickgeorge1/Desktop/router/include/arp.h">
 			<Option target="router"/>
 		</Unit>
+		<Unit filename="/home/patrickgeorge1/Desktop/router/include/arp_table.h">
+			<Option target="router"/>
+		</Unit>
 		<Unit filename="/home/patrickgeorge1/Desktop/router/include/list.h">
 			<Option target="router"/>
 		</Unit>

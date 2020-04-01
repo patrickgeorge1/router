@@ -23,4 +23,6 @@ struct _arp_hdr {
     uint8_t target_ip[4];
 };
 
+
+
 void arp_resolve(int sockfd, uint32_t addr, uint8_t *mac);
