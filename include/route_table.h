@@ -6,7 +6,7 @@
 #define ROUTER_ROUTE_TABLE_H
 
 #include <stdint.h>
-
+#define ROUTE_TABLE_SIZE 64284
 struct route_element {
     int interface;
     u_int32_t mask;

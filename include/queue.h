@@ -16,4 +16,8 @@ extern void *queue_deq(queue q);
 /* return a true value if and only if the queue is empty */
 extern int queue_empty(queue q);
 
+/* return top of the queue */
+extern void *queue_top(queue q);
+
+
 #endif

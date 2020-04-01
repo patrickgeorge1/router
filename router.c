@@ -1,10 +1,21 @@
 #include "skel.h"
 #include "arp.h"
+#include "queue.h"
 #include "arp_table.h"
 #include "route_table.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+void printIp(uint32_t ip) {
+    unsigned char bytes[4];
+    bytes[3] = ip & 0xFF;
+    bytes[2] = (ip >> 8) & 0xFF;
+    bytes[1] = (ip >> 16) & 0xFF;
+    bytes[0] = (ip >> 24) & 0xFF;
+    printf("%d.%d.%d.%d\n", bytes[3], bytes[2], bytes[1], bytes[0]);
+}
+
 
 struct route_element* parse_table() {
     struct route_element *routing_table = malloc(sizeof(struct route_element) * 65000);  //  lungime totala
@@ -52,6 +63,26 @@ int search_arp(struct arp_vector *arp_table, uint8_t * ip) {
     return found;
 }
 
+struct route_element *get_best_route(struct route_element *rtable,  uint32_t dest_ip) {
+    int check_prefix;
+    int position = -1;
+
+    for(int i = 0; i < ROUTE_TABLE_SIZE; ++i) {
+        check_prefix = rtable[i].mask & dest_ip;
+        if(check_prefix == rtable[i].prefix) {
+            if((position != -1 && rtable[position].mask <= rtable[i].mask) || position == -1) {
+                position = i;
+            }
+        }
+    }
+
+    if(position == -1) {
+        return NULL;
+    }
+
+    return &rtable[position];
+}
+
 uint8_t * get_mac_from_index(struct arp_vector *arp_table, int index) {
     return arp_table->table[index].mac;
 }
@@ -70,7 +101,7 @@ void add_arp_entry(struct arp_vector *arp_table, uint8_t * ip, uint8_t * mac) {
 }     // TODO + param IP and MAC
 
 void process_arp_request(packet m) {
-    printf("got request ===> make broadcast \n");
+    printf("got request ===> make reply \n");
 
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct _arp_hdr *arp = (struct _arp_hdr *) (m.payload + ETH_OFF);
@@ -105,15 +136,40 @@ void process_arp_request(packet m) {
     }
 }
 
-void process_arp_reply(packet m) {
+void process_arp_reply(packet m, struct arp_vector *arp_table, queue q) {
     printf("reply ===> send reply back ! \n");
+    struct ether_header *ethernet = (struct ether_header *)m.payload;
+    struct _arp_hdr *arp = (struct _arp_hdr *) (m.payload + ETH_OFF);
 
-    packet pkt;
-    memset((&pkt)->payload, 0, sizeof((&pkt)->payload));
-    (&pkt)->len = 0;
+    add_arp_entry(arp_table, arp->sender_ip, arp->sender_mac);
 
-    struct ether_header * ethernet = (struct ether_header *)pkt.payload;
-    struct _arp_hdr * arp = (struct _arp_hdr *) (pkt.payload + ETH_OFF);
+    while (!queue_empty(q) && search_arp(arp_table, ((struct _arp_hdr *)(((packet *)queue_top(q))->payload + ETH_OFF))->target_ip) != -1) {
+        packet * temp = (packet *)queue_top(q);
+        uint8_t * mac = get_mac_from_index(arp_table, search_arp(arp_table, ((struct _arp_hdr *)(((packet *)queue_top(q))->payload + ETH_OFF))->target_ip));
+
+        struct ether_header *e = (struct ether_header *)(*temp).payload;
+        struct _arp_hdr *a = (struct _arp_hdr *) ((*temp).payload + ETH_OFF);
+        for (int i = 0; i < 6; ++i) {
+            e->ether_dhost[i] = mac[i];
+            a->target_mac[i] = mac[i];
+        }
+        queue_deq(q);
+        send_packet(m.interface, temp);
+    }
+}
+
+void process_ip(packet m, struct arp_vector *arp_table, queue q){
+    struct ether_header *ethernet = (struct ether_header *)m.payload;
+    struct iphdr *ip = (struct iphdr *)(m.payload + IP_OFF);
+    struct icmphdr *icmp = (struct icmphdr *)(m.payload + ICMP_OFF);
+    // iau din ip destinatar ip
+    // daca nu  e in arp table dau drop
+    // daca este iau interfata
+    // ma uit sa vad daca am mac, daca da trimit pe interfata
+    // daca nu, fac arp request si bag mesaj in coada
+
+
+
 }
 
 int main(int argc, char *argv[])
@@ -125,6 +181,24 @@ int main(int argc, char *argv[])
     struct route_element *routing_table = parse_table();  // routing_table[0].prefix
     struct arp_vector *arp_table = init_arp_table();
 
+
+    queue q = queue_create();
+//    int x = 100;
+//    int *  ceva2 = &x;
+//    queue_enq(q,  ceva2);
+//    printf("%d \n",  *(int *)  queue_top(q));
+//    queue_deq(q);
+
+
+//     uint8_t *prefix = malloc(sizeof(uint8_t) * 4);
+//     inet_aton("192.1.15.0", prefix);
+//     struct route_element *entry = get_best_route(routing_table,  *((uint32_t*)prefix));
+//
+//     if(entry == NULL) {
+//     	printf("haos\n");
+//     } else {
+//     	printf("Interface is %d \n", entry->interface);
+//     }
 
     while (1) {
         struct ether_header *eth_hdr_response;
@@ -151,13 +225,12 @@ int main(int argc, char *argv[])
                     // daca am mac destinatie, completez si il fau
                     // daca nu il am, trebuie obtinut prin broadcasting
 
-                    process_arp_reply(m);
+                    process_arp_reply(m, arp_table, q);
                 }
                 break;
 
             case ETHERTYPE_IP:
-                ip_hdr_response = (struct iphdr *)(m.payload + IP_OFF);
-                icmp_hdr_response = (struct icmphdr *)(m.payload + ICMP_OFF);
+                process_ip(m, arp_table, q);
                 break;
         }
 
