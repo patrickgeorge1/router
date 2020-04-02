@@ -19,4 +19,4 @@ add_executable(router
         rtable.txt
         skel.c
         tests.py
-        topo.py include/arp.h include/route_table.h include/arp_table.h)
+        topo.py include/arp.h include/route_table.h include/arp_table.h include/ip.h)

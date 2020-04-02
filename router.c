@@ -1,4 +1,5 @@
 #include "skel.h"
+#include "ip.h"
 #include "arp.h"
 #include "queue.h"
 #include "arp_table.h"
@@ -18,6 +19,7 @@ void printIp(uint32_t ip) {
 
 
 struct route_element* parse_table() {
+    // tine in memorie uint32 in host order
     struct route_element *routing_table = malloc(sizeof(struct route_element) * 65000);  //  lungime totala
     size_t bufsize = 100;
     size_t len = 0;
@@ -88,6 +90,7 @@ uint8_t * get_mac_from_index(struct arp_vector *arp_table, int index) {
 }
 
 struct arp_vector * init_arp_table() {
+    // le tin in network order
     struct arp_vector * arp_table  = malloc(sizeof(struct arp_vector));
     arp_table->table = malloc(sizeof(struct arp_element) * 50000);
     arp_table->size = 0;
@@ -98,7 +101,7 @@ void add_arp_entry(struct arp_vector *arp_table, uint8_t * ip, uint8_t * mac) {
     struct arp_element *new_entry = create_arp_element(ip, mac);
     arp_table->table[arp_table->size] = *new_entry;
     arp_table->size = arp_table->size + 1;
-}     // TODO + param IP and MAC
+}
 
 void process_arp_request(packet m) {
     printf("got request ===> make reply \n");
@@ -143,33 +146,79 @@ void process_arp_reply(packet m, struct arp_vector *arp_table, queue q) {
 
     add_arp_entry(arp_table, arp->sender_ip, arp->sender_mac);
 
-    while (!queue_empty(q) && search_arp(arp_table, ((struct _arp_hdr *)(((packet *)queue_top(q))->payload + ETH_OFF))->target_ip) != -1) {
-        packet * temp = (packet *)queue_top(q);
-        uint8_t * mac = get_mac_from_index(arp_table, search_arp(arp_table, ((struct _arp_hdr *)(((packet *)queue_top(q))->payload + ETH_OFF))->target_ip));
+    // TODO sterg a doua condifie while
+    while (!queue_empty(q) && search_arp(arp_table, ((struct ip_hdr *)(((packet *)queue_top(q))->payload + IP_OFF))->daddr) != -1) {
+        packet * firstOnQueue = (packet *)queue_top(q);
+        uint8_t * mac = get_mac_from_index(arp_table, search_arp(arp_table, ((struct ip_hdr *)(((packet *)queue_top(q))->payload + IP_OFF))->daddr));
 
-        struct ether_header *e = (struct ether_header *)(*temp).payload;
-        struct _arp_hdr *a = (struct _arp_hdr *) ((*temp).payload + ETH_OFF);
+        struct ether_header *e = (struct ether_header *)(*firstOnQueue).payload;
+
         for (int i = 0; i < 6; ++i) {
             e->ether_dhost[i] = mac[i];
-            a->target_mac[i] = mac[i];
         }
         queue_deq(q);
-        send_packet(m.interface, temp);
+        send_packet(firstOnQueue->interface, firstOnQueue);
     }
 }
 
-void process_ip(packet m, struct arp_vector *arp_table, queue q){
+void process_ip(packet m, struct arp_vector *arp_table, struct route_element* routing_table,  queue q){
     struct ether_header *ethernet = (struct ether_header *)m.payload;
-    struct iphdr *ip = (struct iphdr *)(m.payload + IP_OFF);
-    struct icmphdr *icmp = (struct icmphdr *)(m.payload + ICMP_OFF);
-    // iau din ip destinatar ip
-    // daca nu  e in arp table dau drop
-    // daca este iau interfata
-    // ma uit sa vad daca am mac, daca da trimit pe interfata
-    // daca nu, fac arp request si bag mesaj in coada
+    struct ip_hdr *ip = (struct ip_hdr *)(m.payload + IP_OFF);
 
 
+    struct route_element * next_hop = get_best_route(routing_table, *((uint32_t*)ip->daddr));  // TODO check uint_8 to uint_32 conversion
+    if (next_hop != NULL) {
+        if (search_arp(arp_table, ip->daddr) != -1) {   // daca am mac trimit direct
 
+            int index = search_arp(arp_table, ip->daddr);
+            uint8_t * mac = get_mac_from_index(arp_table, index);
+            for (int i = 0; i < 6; ++i) {
+                ethernet->ether_dhost[i] = mac[i];  // completez mac
+            }
+            send_packet(next_hop->interface, &m);
+
+        } else {   // nu am mac, fac request si adaug in coada
+            packet delayedPacket;
+            delayedPacket.interface = m.interface;
+            delayedPacket.len = m.len;
+            memcpy(delayedPacket.payload, m.payload, sizeof(struct ether_header) + sizeof(struct ip_hdr));
+
+            queue_enq(q, &delayedPacket);  // salvat in coada
+
+            packet arpRequest;
+            struct ether_header *e = (struct ether_header *)arpRequest.payload;
+            struct _arp_hdr *a = (struct _arp_hdr *) (arpRequest.payload + ETH_OFF);
+
+            // packet
+            arpRequest.interface = next_hop->interface;
+            arpRequest.len = sizeof(struct ether_header) + sizeof(struct _arp_hdr);
+
+            // ethernet
+            e->ether_type = htons(ETHERTYPE_ARP);
+            get_interface_mac(next_hop->interface, e->ether_shost);
+            for (int i = 0; i < 6; ++i) {
+                e->ether_dhost[i] = 0xff;
+            }
+
+            // arp
+            a->htype = htons(1);
+            a->ptype = htons(ETH_P_IP);
+            a->hlen = 6;
+            a->plen = 4;
+            a->opcode = htons(ARPOP_REQUEST);
+            char * router_ip = get_interface_ip(next_hop->interface);
+            for (int i = 0; i < 4; ++i) {
+                a->sender_ip[i] = router_ip[i];
+                a->target_ip[i] = ip->daddr[i];
+            }
+            get_interface_mac(next_hop->interface, a->sender_mac);
+            for (int i = 0; i < 6; ++i) {
+                a->target_mac[i] = 0x00;
+            }
+
+            send_packet(arpRequest.interface, &arpRequest);  // fac arp request
+        }
+    }
 }
 
 int main(int argc, char *argv[])
@@ -230,7 +279,7 @@ int main(int argc, char *argv[])
                 break;
 
             case ETHERTYPE_IP:
-                process_ip(m, arp_table, q);
+                process_ip(m, arp_table, routing_table, q);
                 break;
         }
 

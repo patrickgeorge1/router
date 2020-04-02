@@ -1,10 +1,61 @@
-Traceback (most recent call last):
-  File "./checker.py", line 77, in <module>
-    main()
-  File "./checker.py", line 71, in main
-    passive(args.host, args.testname)
-  File "./checker.py", line 38, in passive
-    status = fn(testname, packets)
-  File "/home/patrickgeorge1/Desktop/router/tests.py", line 351, in icmp_timeout_p
-    assert ICMP in packets[1], "no ICMP packet from router"
-IndexError: list index out of range
+-- Excess packets:
+-- Packet
+###[ Ethernet ]### 
+  dst       = de:fe:c8:ed:00:00
+  src       = 00:00:00:00:00:00
+  type      = IPv4
+###[ IP ]### 
+     version   = 4
+     ihl       = 5
+     tos       = 0x0
+     len       = 20
+     id        = 1
+     flags     = 
+     frag      = 0
+     ttl       = 1
+     proto     = hopopt
+     chksum    = 0x3895
+     src       = 192.168.0.2
+     dst       = 192.168.0.2
+     \options   \
+
+-- Packet
+###[ Ethernet ]### 
+  dst       = de:ad:be:ef:00:00
+  src       = 00:00:00:00:00:00
+  type      = IPv4
+###[ IP ]### 
+     version   = 4
+     ihl       = 5
+     tos       = 0x0
+     len       = 20
+     id        = 1
+     flags     = 
+     frag      = 0
+     ttl       = 1
+     proto     = hopopt
+     chksum    = 0x3895
+     src       = 192.168.0.2
+     dst       = 192.168.0.2
+     \options   \
+
+-- Packet
+###[ Ethernet ]### 
+  dst       = de:ad:be:ef:00:00
+  src       = 00:00:00:00:00:00
+  type      = IPv4
+###[ IP ]### 
+     version   = 4
+     ihl       = 5
+     tos       = 0x0
+     len       = 20
+     id        = 1
+     flags     = 
+     frag      = 0
+     ttl       = 1
+     proto     = hopopt
+     chksum    = 0x3895
+     src       = 192.168.0.2
+     dst       = 192.168.0.2
+     \options   \
+
