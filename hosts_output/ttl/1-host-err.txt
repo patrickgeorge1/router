@@ -1,3 +1,0 @@
--- Wrong TTL value
--- Expected: ttl=63
--- Got: ttl=64
