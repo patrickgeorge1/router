@@ -104,16 +104,23 @@ void add_arp_entry(struct arp_vector *arp_table, uint8_t * ip, uint8_t * mac) {
 }
 
 void process_arp_request(packet m) {
-    printf("got request ===> make reply \n");
+    printf("got request ===> make reply \n\n");
+
 
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct _arp_hdr *arp = (struct _arp_hdr *) (m.payload + ETH_OFF);
-    char * router_ip = get_interface_ip(m.interface);
+    struct in_addr rip;
+    char *router_ip = get_interface_ip(m.interface);
+    inet_aton(router_ip, &rip);
+
+    printf("before : From   \n\n");
+    printIp(*((uint32_t*)arp->sender_ip));
+    printf("To     \n");
+    printIp(*((uint32_t*)arp->target_ip));
+    printf("AAAAAAAAAAAAAAAAA \n\n");
 
 
-    struct in_addr requested_ip;
-    inet_aton(router_ip, &requested_ip);
-    if (memcmp(&requested_ip, arp->target_ip, 4) == 0) {   // verific daca requestul venit prin broadcast este destinat router
+    if (memcmp(&rip, arp->target_ip, 4) == 0) {   // verific daca requestul venit prin broadcast este destinat router
         // eternet
         for (int i = 0; i < 6; ++i) {
             ethernet->ether_dhost[i] = ethernet->ether_shost[i];
@@ -131,10 +138,16 @@ void process_arp_request(packet m) {
             arp->target_mac[i] = arp->sender_mac[i];
         }
         get_interface_mac(m.interface, arp->sender_mac);
-        for (int i = 0; i < 4; ++i) {
-            arp->target_ip[i] = arp->sender_ip[i];
-            arp->sender_ip[i] = router_ip[i];
-        }
+
+        memcpy(&arp->target_ip, &arp->sender_ip, 4 * sizeof(uint8_t));
+        memcpy(&arp->sender_ip, &rip, 4 * sizeof(uint8_t));  // TODO ROUTER IP
+
+        printf("after : From   \n\n");
+        printIp(*((uint32_t*)arp->sender_ip));
+        printf("To     \n");
+        printIp(*((uint32_t*)arp->target_ip));
+        printf("AAAAAAAAAAAAAAAAA \n\n");
+
         send_packet(m.interface, &m);
     }
 }
@@ -144,12 +157,18 @@ void process_arp_reply(packet m, struct arp_vector *arp_table, queue q) {
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct _arp_hdr *arp = (struct _arp_hdr *) (m.payload + ETH_OFF);
 
-    add_arp_entry(arp_table, arp->sender_ip, arp->sender_mac);
+    printf("REPLY : From   \n\n");
+    printIp(*((uint32_t*)arp->sender_ip));
+    printf("To     \n");
+    printIp(*((uint32_t*)arp->target_ip));
+    printf("AAAAAAAAAAAAAAAAA \n\n");
 
+
+    add_arp_entry(arp_table, arp->sender_ip, arp->sender_mac);
     // TODO sterg a doua condifie while
-    while (!queue_empty(q) && search_arp(arp_table, ((struct ip_hdr *)(((packet *)queue_top(q))->payload + IP_OFF))->daddr) != -1) {
-        packet * firstOnQueue = (packet *)queue_top(q);
-        uint8_t * mac = get_mac_from_index(arp_table, search_arp(arp_table, ((struct ip_hdr *)(((packet *)queue_top(q))->payload + IP_OFF))->daddr));
+    while (!queue_empty(q)) {
+        packet * firstOnQueue = (packet *) queue_top(q);
+        uint8_t * mac = get_mac_from_index(arp_table, search_arp(arp_table, ((struct ip_hdr *)(firstOnQueue->payload + IP_OFF))->daddr));
 
         struct ether_header *e = (struct ether_header *)(*firstOnQueue).payload;
 
@@ -179,7 +198,7 @@ void process_ip(packet m, struct arp_vector *arp_table, struct route_element* ro
 
         } else {   // nu am mac, fac request si adaug in coada
             packet delayedPacket;
-            delayedPacket.interface = m.interface;
+            delayedPacket.interface = next_hop->interface;
             delayedPacket.len = m.len;
             memcpy(delayedPacket.payload, m.payload, sizeof(struct ether_header) + sizeof(struct ip_hdr));
 
@@ -206,11 +225,16 @@ void process_ip(packet m, struct arp_vector *arp_table, struct route_element* ro
             a->hlen = 6;
             a->plen = 4;
             a->opcode = htons(ARPOP_REQUEST);
+
             char * router_ip = get_interface_ip(next_hop->interface);
+            struct in_addr rip;
+            inet_aton(router_ip, &rip);
+            memcpy(&a->sender_ip, &rip, 4 * sizeof(uint8_t));
+
             for (int i = 0; i < 4; ++i) {
-                a->sender_ip[i] = router_ip[i];
                 a->target_ip[i] = ip->daddr[i];
             }
+
             get_interface_mac(next_hop->interface, a->sender_mac);
             for (int i = 0; i < 6; ++i) {
                 a->target_mac[i] = 0x00;

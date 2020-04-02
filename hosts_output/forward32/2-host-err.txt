@@ -1,4 +1,0 @@
-  File "./checker.py", line 38, in passive
-    status = fn(testname, packets)
-  File "/home/patrickgeorge1/Desktop/router/tests.py", line 259, in forward_p
-    assert IP in p, "no IP packet from router"
