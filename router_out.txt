@@ -16,30 +16,34 @@ got request ===> make reply
  got IP  ==> forward  
  got IP  ==> forward  
  got IP  ==> forward  
+got request ===> make reply 
+
  got IP  ==> forward  
  got IP  ==> forward  
  
    ICMP    
  got IP  ==> forward  
+ 
+   Timeout    
  got IP  ==> forward  
+ 
+   No route for destination    
  got IP  ==> forward  
 reply ===> send reply back ! 
  got IP  ==> forward  
 got request ===> make reply 
 
  got IP  ==> forward  
+ got IP  ==> forward  
+got request ===> make reply 
+
+ got IP  ==> forward  
 reply ===> send reply back ! 
  got IP  ==> forward  
 got request ===> make reply 
 
  got IP  ==> forward  
  got IP  ==> forward  
-got request ===> make reply 
-
- got IP  ==> forward  
- got IP  ==> forward  
- got IP  ==> forward  
- got IP  ==> forward  
  got IP  ==> forward  
  got IP  ==> forward  
  got IP  ==> forward  
@@ -48,8 +52,6 @@ got request ===> make reply
 
  got IP  ==> forward  
  got IP  ==> forward  
-got request ===> make reply 
-
  got IP  ==> forward  
  got IP  ==> forward  
 got request ===> make reply 
@@ -78,5 +80,9 @@ got request ===> make reply
  got IP  ==> forward  
  got IP  ==> forward  
  got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+got request ===> make reply 
+
  got IP  ==> forward  
  got IP  ==> forward  

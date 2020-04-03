@@ -470,7 +470,6 @@ TESTS = {
         "router_icmp": Test(0, 0, router_icmp_a, router_icmp_p),
         "icmp_timeout": Test(0, 0, icmp_timeout_a, icmp_timeout_p),
         "host_unreachable": Test(0, 0, host_unreachable_a, host_unreachable_p),
-        "forward02": Test(0, 2, forward_a, forward_p),
         "forward03": Test(0, 3, forward_a, forward_p),
         "forward10": Test(1, 0, forward_a, forward_p),
         "forward12": Test(1, 2, forward_a, forward_p),
@@ -482,4 +481,6 @@ TESTS = {
         "forward31": Test(3, 1, forward_a, forward_p),
         "forward32": Test(3, 2, forward_a, forward_p),
         "forward10packets": Test(0, 1, forward10packets_a, forward10packets_p),
+        "forward02": Test(0, 2, forward_a, forward_p),
+
 }
