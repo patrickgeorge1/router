@@ -1,176 +1,82 @@
 got request ===> make reply 
 
-before : From   
-
-192.168.0.2
-To     
-192.168.0.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.0.1
-To     
-192.168.0.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
 reply ===> send reply back ! 
-REPLY : From   
-
-192.168.1.2
-To     
-192.168.1.1
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
 reply ===> send reply back ! 
-REPLY : From   
-
-192.168.0.2
-To     
-192.168.0.1
-AAAAAAAAAAAAAAAAA 
-
 got request ===> make reply 
 
-before : From   
-
-192.168.1.2
-To     
-192.168.1.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.1.1
-To     
-192.168.1.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ 
+   ICMP    
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
 reply ===> send reply back ! 
-REPLY : From   
-
-192.168.2.2
-To     
-192.168.2.1
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
 got request ===> make reply 
 
-before : From   
-
-192.168.2.2
-To     
-192.168.2.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.2.1
-To     
-192.168.2.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
 reply ===> send reply back ! 
-REPLY : From   
-
-192.168.3.2
-To     
-192.168.3.1
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
 got request ===> make reply 
 
-before : From   
-
-192.168.3.2
-To     
-192.168.3.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.3.1
-To     
-192.168.3.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
+ got IP  ==> forward  
 got request ===> make reply 
 
-before : From   
-
-192.168.0.2
-To     
-192.168.0.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.0.1
-To     
-192.168.0.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
 got request ===> make reply 
 
-before : From   
-
-192.168.1.2
-To     
-192.168.1.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.1.1
-To     
-192.168.1.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
+ got IP  ==> forward  
 got request ===> make reply 
 
-before : From   
-
-192.168.3.2
-To     
-192.168.3.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.3.1
-To     
-192.168.3.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
+ got IP  ==> forward  
 got request ===> make reply 
 
-before : From   
-
-192.168.0.2
-To     
-192.168.0.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.0.1
-To     
-192.168.0.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
 got request ===> make reply 
 
-before : From   
-
-192.168.2.2
-To     
-192.168.2.1
-AAAAAAAAAAAAAAAAA 
-
-after : From   
-
-192.168.2.1
-To     
-192.168.2.2
-AAAAAAAAAAAAAAAAA 
-
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  

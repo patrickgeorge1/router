@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-void printIp(uint32_t ip) {
+void printIp(uint32_t ip) {   // TODO delete
     unsigned char bytes[4];
     bytes[3] = ip & 0xFF;
     bytes[2] = (ip >> 8) & 0xFF;
@@ -83,7 +83,7 @@ struct route_element *get_best_route(struct route_element *rtable,  uint32_t des
     }
 
     return &rtable[position];
-}
+}   // TODO adjutst
 
 uint8_t * get_mac_from_index(struct arp_vector *arp_table, int index) {
     return arp_table->table[index].mac;
@@ -113,11 +113,11 @@ void process_arp_request(packet m) {
     char *router_ip = get_interface_ip(m.interface);
     inet_aton(router_ip, &rip);
 
-    printf("before : From   \n\n");
-    printIp(*((uint32_t*)arp->sender_ip));
-    printf("To     \n");
-    printIp(*((uint32_t*)arp->target_ip));
-    printf("AAAAAAAAAAAAAAAAA \n\n");
+//    printf("before : From   \n\n");
+//    printIp(*((uint32_t*)arp->sender_ip));
+//    printf("To     \n");
+//    printIp(*((uint32_t*)arp->target_ip));
+//    printf("AAAAAAAAAAAAAAAAA \n\n");
 
 
     if (memcmp(&rip, arp->target_ip, 4) == 0) {   // verific daca requestul venit prin broadcast este destinat router
@@ -142,11 +142,11 @@ void process_arp_request(packet m) {
         memcpy(&arp->target_ip, &arp->sender_ip, 4 * sizeof(uint8_t));
         memcpy(&arp->sender_ip, &rip, 4 * sizeof(uint8_t));  // TODO ROUTER IP
 
-        printf("after : From   \n\n");
-        printIp(*((uint32_t*)arp->sender_ip));
-        printf("To     \n");
-        printIp(*((uint32_t*)arp->target_ip));
-        printf("AAAAAAAAAAAAAAAAA \n\n");
+//        printf("after : From   \n\n");
+//        printIp(*((uint32_t*)arp->sender_ip));
+//        printf("To     \n");
+//        printIp(*((uint32_t*)arp->target_ip));
+//        printf("AAAAAAAAAAAAAAAAA \n\n");
 
         send_packet(m.interface, &m);
     }
@@ -157,11 +157,11 @@ void process_arp_reply(packet m, struct arp_vector *arp_table, queue q) {
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct _arp_hdr *arp = (struct _arp_hdr *) (m.payload + ETH_OFF);
 
-    printf("REPLY : From   \n\n");
-    printIp(*((uint32_t*)arp->sender_ip));
-    printf("To     \n");
-    printIp(*((uint32_t*)arp->target_ip));
-    printf("AAAAAAAAAAAAAAAAA \n\n");
+//    printf("REPLY : From   \n\n");
+//    printIp(*((uint32_t*)arp->sender_ip));
+//    printf("To     \n");
+//    printIp(*((uint32_t*)arp->target_ip));
+//    printf("AAAAAAAAAAAAAAAAA \n\n");
 
 
     add_arp_entry(arp_table, arp->sender_ip, arp->sender_mac);
@@ -232,18 +232,154 @@ uint16_t ip_checksum(void* vdata,size_t length) {
     return htons(~acc);
 }
 
+unsigned short in_cksum(const unsigned short *addr, int len, unsigned short csum) {
+    int nleft = len;
+    const unsigned short *w = addr;
+    unsigned short answer;
+    int sum = csum;
+
+    /*
+     *  Our algorithm is simple, using a 32 bit accumulator (sum),
+     *  we add sequential 16 bit words to it, and at the end, fold
+     *  back all the carry bits from the top 16 bits into the lower
+     *  16 bits.
+     */
+    while (nleft > 1) {
+        sum += *w++;
+        nleft -= 2;
+    }
+
+    /* mop up an odd byte, if necessary */
+    if (nleft == 1)
+        sum += *(unsigned char *)w; /* le16toh() may be unavailable on old systems */
+
+    /*
+     * add back carry outs from top 16 bits to low 16 bits
+     */
+    sum = (sum >> 16) + (sum & 0xffff);	/* add hi 16 to low 16 */
+    sum += (sum >> 16);			/* add carry */
+    answer = ~sum;				/* truncate to 16 bits */
+    return (answer);
+}
+
+uint16_t checksum(void *vdata, size_t length) {
+    // Cast the data pointer to one that can be indexed.
+    char* data=(char*)vdata;
+
+    // Initialise the accumulator.
+    uint64_t acc=0xffff;
+
+    // Handle any partial block at the start of the data.
+    unsigned int offset=((uintptr_t)data)&3;
+    if (offset) {
+        size_t count=4-offset;
+        if (count>length) count=length;
+        uint32_t word=0;
+        memcpy(offset+(char*)&word,data,count);
+        acc+=ntohl(word);
+        data+=count;
+        length-=count;
+    }
+
+    // Handle any complete 32-bit blocks.
+    char* data_end=data+(length&~3);
+    while (data!=data_end) {
+        uint32_t word;
+        memcpy(&word,data,4);
+        acc+=ntohl(word);
+        data+=4;
+    }
+    length&=3;
+
+    // Handle any partial block at the end of the data.
+    if (length) {
+        uint32_t word=0;
+        memcpy(&word,data,length);
+        acc+=ntohl(word);
+    }
+
+    // Handle deferred carries.
+    acc=(acc&0xffffffff)+(acc>>32);
+    while (acc>>16) {
+        acc=(acc&0xffff)+(acc>>16);
+    }
+
+    // If the data began at an odd byte address
+    // then reverse the byte order to compensate.
+    if (offset&1) {
+        acc=((acc&0xff00)>>8)|((acc&0x00ff)<<8);
+    }
+
+    // Return the checksum in network byte order.
+    return htons(~acc);
+}
 
 void process_ip(packet m, struct arp_vector *arp_table, struct route_element* routing_table,  queue q){
+    printf(" got IP  ==> forward  \n");
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct ip_hdr *ip = (struct ip_hdr *)(m.payload + IP_OFF);
 
-    __u16 control_sum =  ip->csum;
+    struct icmphdr *icmp_hdr = (struct icmphdr *)(m.payload + ICMP_OFF);
+
+    // TODO delete this if to get sent 10 packets
+    if (ip->proto == IPPROTO_ICMP) {   // daca vine IP + ICMP
+
+        struct in_addr this_router_ip;
+        inet_aton(get_interface_ip(m.interface), &this_router_ip);
+
+        if (memcmp(ip->daddr, &this_router_ip.s_addr, 4) == 0 && icmp_hdr->type == ICMP_ECHO) {   // daca este adresat routerului ECHO Request
+            printf(" \n   ICMP    \n");
+
+//            // ETERNET
+//            for (int i = 0; i < 6; ++i) {
+//                ethernet->ether_dhost[i] = ethernet->ether_shost[i];
+//            }
+//            get_interface_mac(m.interface, ethernet->ether_shost);
+
+            m.len = sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr);
+//
+//            // IP
+//            ip->version = 4;
+//            ip->ihl = 5; // dimensiunea headerului in cuvinte de 32 de biti
+//            ip->ttl = 3;
+//            ip->proto = IPPROTO_ICMP;
+//            ip->frag_offset = 0;
+//            ip->tos = 0;
+//
+//            ip->id = 0; // sau getpid()
+            memcpy(&ip->daddr, &ip->saddr, 4 * sizeof(uint8_t));
+            memcpy(&ip->saddr, &this_router_ip, 4 * sizeof(uint8_t));
+//            ip->len = htons(sizeof(struct iphdr) + sizeof(struct icmphdr));
+            ip->csum = 0;
+            ip->csum = htons(checksum(ip, sizeof(struct iphdr)));
+//            ip->csum = ip_checksum(ip, sizeof(struct ip_hdr));
+
+
+            // ICMP
+//            icmp_hdr->code = 0;
+            icmp_hdr->type = ICMP_ECHOREPLY;
+//            icmp_hdr->un.echo.id = htons(0);
+//            icmp_hdr->un.echo.sequence = htons(0);
+            icmp_hdr->checksum = 0;
+            icmp_hdr->checksum = checksum(icmp_hdr, sizeof(struct icmphdr));
+
+//            icmp_hdr->checksum =  in_cksum((unsigned short *)&icmp_hdr, 8, 0);
+//                        icmp_hdr->checksum = ip_checksum((uint16_t *) icmp_hdr, sizeof(struct icmphdr) + );
+
+
+            send_packet(m.interface, &m);
+            return;
+        }
+    }
+
+
+    __u16 control_sum =  ip->csum;   // TODO ajust
     ip->csum = 0;
     if (control_sum != ip_checksum(ip, sizeof(struct ip_hdr))) {
         return;
     }
 
-    struct route_element * next_hop = get_best_route(routing_table, *((uint32_t*)ip->daddr));  // TODO check uint_8 to uint_32 conversion
+    struct route_element * next_hop = get_best_route(routing_table, *((uint32_t*)ip->daddr));
     if (ip->ttl >= 1 && next_hop != NULL) {
         ip->ttl--;
         ip->csum = ip_checksum(ip, sizeof(struct ip_hdr));
@@ -316,25 +452,7 @@ int main(int argc, char *argv[])
 	init();
     struct route_element *routing_table = parse_table();  // routing_table[0].prefix
     struct arp_vector *arp_table = init_arp_table();
-
-
     queue q = queue_create();
-//    int x = 100;
-//    int *  ceva2 = &x;
-//    queue_enq(q,  ceva2);
-//    printf("%d \n",  *(int *)  queue_top(q));
-//    queue_deq(q);
-
-
-//     uint8_t *prefix = malloc(sizeof(uint8_t) * 4);
-//     inet_aton("192.1.15.0", prefix);
-//     struct route_element *entry = get_best_route(routing_table,  *((uint32_t*)prefix));
-//
-//     if(entry == NULL) {
-//     	printf("haos\n");
-//     } else {
-//     	printf("Interface is %d \n", entry->interface);
-//     }
 
     while (1) {
         struct ether_header *eth_hdr_response;
