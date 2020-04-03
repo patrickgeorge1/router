@@ -34,18 +34,28 @@ reply ===> send reply back !
 got request ===> make reply 
 
  got IP  ==> forward  
- got IP  ==> forward  
-got request ===> make reply 
-
- got IP  ==> forward  
 reply ===> send reply back ! 
  got IP  ==> forward  
 got request ===> make reply 
 
  got IP  ==> forward  
  got IP  ==> forward  
+got request ===> make reply 
+
  got IP  ==> forward  
  got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+ got IP  ==> forward  
+got request ===> make reply 
+
+ got IP  ==> forward  
+ got IP  ==> forward  
+got request ===> make reply 
+
  got IP  ==> forward  
  got IP  ==> forward  
 got request ===> make reply 
@@ -60,12 +70,6 @@ got request ===> make reply
  got IP  ==> forward  
  got IP  ==> forward  
  got IP  ==> forward  
-got request ===> make reply 
-
- got IP  ==> forward  
- got IP  ==> forward  
- got IP  ==> forward  
- got IP  ==> forward  
  got IP  ==> forward  
  got IP  ==> forward  
  got IP  ==> forward  
@@ -84,5 +88,3 @@ got request ===> make reply
  got IP  ==> forward  
 got request ===> make reply 
 
- got IP  ==> forward  
- got IP  ==> forward  
