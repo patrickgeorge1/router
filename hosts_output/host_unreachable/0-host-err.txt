@@ -1,4 +1,0 @@
-  File "./checker.py", line 38, in passive
-    status = fn(testname, packets)
-  File "/home/patrickgeorge1/Desktop/router/tests.py", line 385, in host_unreachable_p
-    assert ICMP in packets[1], "no ICMP packet from router"

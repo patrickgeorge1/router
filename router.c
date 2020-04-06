@@ -17,7 +17,6 @@ void printIp(uint32_t ip) {   // TODO delete
     printf("%d.%d.%d.%d\n", bytes[3], bytes[2], bytes[1], bytes[0]);
 }
 
-
 struct route_element* parse_table() {
     // tine in memorie uint32 in host order
     struct route_element *routing_table = malloc(sizeof(struct route_element) * 65000);  //  lungime totala
@@ -55,6 +54,7 @@ struct route_element* parse_table() {
 }
 
 int search_arp(struct arp_vector *arp_table, uint8_t * ip) {
+    // returns pair (ip, mac) in table or -1
     int found = -1;
     for (int i = 0; i < arp_table->size; ++i) {
         if (memcmp(arp_table->table[i].ip, ip, 4) == 0) {
@@ -66,6 +66,7 @@ int search_arp(struct arp_vector *arp_table, uint8_t * ip) {
 }
 
 struct route_element *get_best_route(struct route_element *rtable,  uint32_t dest_ip) {
+    // returns routing table entry with desired ip or NULL
     int check_prefix;
     int position = -1;
 
@@ -83,14 +84,14 @@ struct route_element *get_best_route(struct route_element *rtable,  uint32_t des
     }
 
     return &rtable[position];
-}   // TODO adjutst
+}   // TODO adjutst ( e din laborator)
 
 uint8_t * get_mac_from_index(struct arp_vector *arp_table, int index) {
     return arp_table->table[index].mac;
 }
 
 struct arp_vector * init_arp_table() {
-    // le tin in network order
+    // init arp table
     struct arp_vector * arp_table  = malloc(sizeof(struct arp_vector));
     arp_table->table = malloc(sizeof(struct arp_element) * 50000);
     arp_table->size = 0;
@@ -98,27 +99,19 @@ struct arp_vector * init_arp_table() {
 }
 
 void add_arp_entry(struct arp_vector *arp_table, uint8_t * ip, uint8_t * mac) {
+    // add a new arp entry to arp table
     struct arp_element *new_entry = create_arp_element(ip, mac);
     arp_table->table[arp_table->size] = *new_entry;
     arp_table->size = arp_table->size + 1;
 }
 
 void process_arp_request(packet m) {
-    printf("got request ===> make reply \n\n");
-
-
+    // Process an arp request received by router
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct _arp_hdr *arp = (struct _arp_hdr *) (m.payload + ETH_OFF);
     struct in_addr rip;
     char *router_ip = get_interface_ip(m.interface);
     inet_aton(router_ip, &rip);
-
-//    printf("before : From   \n\n");
-//    printIp(*((uint32_t*)arp->sender_ip));
-//    printf("To     \n");
-//    printIp(*((uint32_t*)arp->target_ip));
-//    printf("AAAAAAAAAAAAAAAAA \n\n");
-
 
     if (memcmp(&rip, arp->target_ip, 4) == 0) {   // verific daca requestul venit prin broadcast este destinat router
         // eternet
@@ -141,30 +134,24 @@ void process_arp_request(packet m) {
 
         memcpy(&arp->target_ip, &arp->sender_ip, 4 * sizeof(uint8_t));
         memcpy(&arp->sender_ip, &rip, 4 * sizeof(uint8_t));  // TODO ROUTER IP
-
-//        printf("after : From   \n\n");
-//        printIp(*((uint32_t*)arp->sender_ip));
-//        printf("To     \n");
-//        printIp(*((uint32_t*)arp->target_ip));
-//        printf("AAAAAAAAAAAAAAAAA \n\n");
-
         send_packet(m.interface, &m);
     }
 }
 
 void process_arp_reply(packet m, struct arp_vector *arp_table, queue q) {
-    printf("reply ===> send reply back ! \n");
+    // Adaug in tabela si trimit din coada
+
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct _arp_hdr *arp = (struct _arp_hdr *) (m.payload + ETH_OFF);
 
-    add_arp_entry(arp_table, arp->sender_ip, arp->sender_mac);
-    while (!queue_empty(q)) {
+    add_arp_entry(arp_table, arp->sender_ip, arp->sender_mac); // salvez MAC in tabela
+    while (!queue_empty(q)) {   // trimit ce aveam in coada
         packet * firstOnQueue = (packet *) queue_top(q);
         uint8_t * mac = get_mac_from_index(arp_table, search_arp(arp_table, ((struct ip_hdr *)(firstOnQueue->payload + IP_OFF))->daddr));
 
         struct ether_header *e = (struct ether_header *)(*firstOnQueue).payload;
 
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 6; ++i) {   // completez si trimit cu MAC-ul primit
             e->ether_dhost[i] = mac[i];
         }
         queue_deq(q);
@@ -222,127 +209,126 @@ uint16_t ip_checksum(void* vdata,size_t length) {
 
     // Return the checksum in network byte order.
     return htons(~acc);
-}
+}  // din laborator
 
 void send_timeout(packet m) {
     printf(" \n   Timeout    \n");
 
-    struct ip_hdr *ip = (struct ip_hdr *)(m.payload + IP_OFF);
-    struct icmphdr *icmp_hdr = (struct icmphdr *)(m.payload + ICMP_OFF);
+    struct ether_header *ethernet = (struct ether_header *)m.payload;
+    struct iphdr *ip = (struct iphdr *)(m.payload + IP_OFF);
 
     struct in_addr rip;
     char *router_ip = get_interface_ip(m.interface);
     inet_aton(router_ip, &rip);
 
-//
-//    packet reply;
-//    memset(reply.payload, 0, sizeof(reply.payload));
-//    reply.len = sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr);
-//    reply.interface = m.interface;
-//
-//
-//    struct ether_header *et_limit = (struct ether_header *)reply.payload;
-//    struct ip_hdr *ip_limit = (struct ip_hdr *)(reply.payload + IP_OFF);
-//    struct icmphdr *icmp_limit = (struct icmphdr *)(reply.payload + ICMP_OFF);
-//
-//
-//
-//    // ETHERNET
-//    memcpy(&reply.payload, &m.payload, sizeof(struct ether_header) + sizeof(struct ip_hdr));
-////    et_limit->ether_type = htons(ETHERTYPE_IP);
-////    memcpy(&et_limit->ether_dhost, &et_limit->ether_shost, 6 * sizeof(uint8_t));
-////    get_interface_mac(m.interface, et_limit->ether_shost);
-//
-//    // IP
-//    ip_limit->version = 4; // IPv4
-//    ip_limit->ihl = 5; // dimensiunea headerului in cuvinte de 32 de biti
-//    ip_limit->ttl = 1;
-//    ip_limit->proto = IPPROTO_ICMP;
-//    ip_limit->id = htons(getpid() & 0xFFFF);
-//    ip_limit->len = htons(sizeof(struct iphdr) + sizeof(struct icmphdr));
-//
-//    memcpy(&ip_limit->daddr, &ip->saddr, 4 * sizeof(uint8_t));
-//        printf(" to  \n");
-//        printIp(*((uint32_t*)ip_limit->daddr));
-//
-//    memcpy(&ip_limit->saddr, &rip, 4 * sizeof(uint8_t));
-//        printf("  from    \n");
-//        printIp(*((uint32_t*)ip_limit->saddr));
-//
-//    ip_limit->csum = 0;
-//    ip_limit->csum = htons(ip_checksum(ip_limit, sizeof(struct iphdr)));
-//
-//    // ICMP
-//    icmp_limit->code = 0;
-//    icmp_limit->type = ICMP_TIME_EXCEEDED;
-//    icmp_limit->un.echo.id = htons(getpid() & 0xFFFF);
-//    icmp_limit->un.echo.sequence = htons(getpid() & 0xFFFF);
-//    icmp_limit->checksum = 0;
-//    icmp_limit->checksum = ip_checksum(icmp_limit, sizeof(struct icmphdr));
 
-//    send_packet(reply.interface, &reply);
+    packet reply;
+    reply.len = sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr);
+    reply.interface = m.interface;
 
 
-    m.len = sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr);
+    struct ether_header *et_limit = (struct ether_header *)reply.payload;
+    struct iphdr *ip_limit = (struct iphdr *)(reply.payload + IP_OFF);
+    struct icmphdr *icmp_limit = (struct icmphdr *)(reply.payload + ICMP_OFF);
 
-    memcpy(&ip->daddr, &ip->saddr, 4 * sizeof(uint8_t));
-    memcpy(&ip->saddr, &rip, 4 * sizeof(uint8_t));
-    ip->csum = 0;
-    ip->csum = htons(ip_checksum(ip, sizeof(struct iphdr)));
 
-    icmp_hdr->type = ICMP_TIME_EXCEEDED;
-    icmp_hdr->checksum = 0;
-    icmp_hdr->checksum = ip_checksum(icmp_hdr, sizeof(struct icmphdr));
 
-    send_packet(m.interface, &m);
+    // ETHERNET
+    et_limit->ether_type = htons(ETHERTYPE_IP);
+    memcpy(&et_limit->ether_dhost, &ethernet->ether_shost, 6 * sizeof(uint8_t));
+    get_interface_mac(m.interface, et_limit->ether_shost);
+
+    // IP
+    ip_limit->version = 4; // IPv4
+    ip_limit->ihl = 5; // dimensiunea headerului in cuvinte de 32 de biti
+    ip_limit->tos = 0;
+    ip_limit->ttl = 64;
+    ip_limit->protocol = IPPROTO_ICMP;
+    ip_limit->id = htons(getpid() & 0xFFFF);
+    ip_limit->tot_len = sizeof(struct iphdr) + sizeof(struct icmphdr);
+    ip_limit->frag_off = 0;
+    memcpy(&ip_limit->daddr, &ip->saddr, 4 * sizeof(uint8_t));
+    memcpy(&ip_limit->saddr, &rip, 4 * sizeof(uint8_t));
+    ip_limit->check = 0;
+    ip_limit->check = ip_checksum(ip_limit, sizeof(struct iphdr));
+
+    // ICMP
+    icmp_limit->code = 0;
+    icmp_limit->type = ICMP_TIME_EXCEEDED;
+    icmp_limit->un.echo.id = htons(getpid() & 0xFFFF);
+    icmp_limit->un.echo.sequence = 0;
+    icmp_limit->checksum = 0;
+    icmp_limit->checksum = ip_checksum(icmp_limit, sizeof(struct icmphdr));
+
+    send_packet(reply.interface, &reply);
 }
 
 void sent_host_unreachable(packet m) {
-    printf(" \n   No route for destination    \n");
-    struct ether_header *ethernet = (struct ether_header *)m.payload;
-    struct ip_hdr *ip = (struct ip_hdr *)(m.payload + IP_OFF);
-    struct icmphdr *icmp_hdr = (struct icmphdr *)(m.payload + ICMP_OFF);
+    // Trimit ICMP host unreachable
 
+    struct ether_header *ethernet = (struct ether_header *)m.payload;
+    struct iphdr *ip = (struct iphdr *)(m.payload + IP_OFF);
 
     struct in_addr rip;
     char *router_ip = get_interface_ip(m.interface);
     inet_aton(router_ip, &rip);
 
-    m.len = sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr);
 
+    packet reply;
+    reply.len = sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr);
+    reply.interface = m.interface;
+
+
+    struct ether_header *et_limit = (struct ether_header *)reply.payload;
+    struct iphdr *ip_limit = (struct iphdr *)(reply.payload + IP_OFF);
+    struct icmphdr *icmp_limit = (struct icmphdr *)(reply.payload + ICMP_OFF);
+
+
+
+    // ETHERNET
+    et_limit->ether_type = htons(ETHERTYPE_IP);
+    memcpy(&et_limit->ether_dhost, &ethernet->ether_shost, 6 * sizeof(uint8_t));
+    get_interface_mac(m.interface, et_limit->ether_shost);
 
     // IP
-    memcpy(&ip->daddr, &ip->saddr, 4 * sizeof(uint8_t));
-    memcpy(&ip->saddr, &rip, 4 * sizeof(uint8_t));
-    ip->csum = 0;
-    ip->csum = htons(ip_checksum(ip, sizeof(struct iphdr)));
-
+    ip_limit->version = 4; // IPv4
+    ip_limit->ihl = 5; // dimensiunea headerului in cuvinte de 32 de biti
+    ip_limit->tos = 0;
+    ip_limit->ttl = 64;
+    ip_limit->protocol = IPPROTO_ICMP;
+    ip_limit->id = htons(getpid() & 0xFFFF);
+    ip_limit->tot_len = sizeof(struct iphdr) + sizeof(struct icmphdr);
+    ip_limit->frag_off = 0;
+    memcpy(&ip_limit->daddr, &ip->saddr, 4 * sizeof(uint8_t));
+    memcpy(&ip_limit->saddr, &rip, 4 * sizeof(uint8_t));
+    ip_limit->check = 0;
+    ip_limit->check = ip_checksum(ip_limit, sizeof(struct iphdr));
 
     // ICMP
-    icmp_hdr->type = ICMP_DEST_UNREACH;
-    icmp_hdr->checksum = 0;
-    icmp_hdr->checksum = ip_checksum(icmp_hdr, sizeof(struct icmphdr));
+    icmp_limit->code = 0;
+    icmp_limit->type = ICMP_DEST_UNREACH;
+    icmp_limit->un.echo.id = htons(getpid() & 0xFFFF);
+    icmp_limit->un.echo.sequence = 0;
+    icmp_limit->checksum = 0;
+    icmp_limit->checksum = ip_checksum(icmp_limit, sizeof(struct icmphdr));
 
-    send_packet(m.interface, &m);
+    send_packet(reply.interface, &reply);
 }
 
-void process_ip(packet m, struct arp_vector *arp_table, struct route_element* routing_table,  queue q){
-    printf(" got IP  ==> forward  \n");
+void process_ip(packet m, struct arp_vector *arp_table, struct route_element* routing_table,  queue q) {
+    // daca stiu MAC, si am destinatia, ttl si checksum, trimit direct
+    // altfel fac arp request si pun in coada
+
     struct ether_header *ethernet = (struct ether_header *)m.payload;
     struct ip_hdr *ip = (struct ip_hdr *)(m.payload + IP_OFF);
-
     struct icmphdr *icmp_hdr = (struct icmphdr *)(m.payload + ICMP_OFF);
 
-    // TODO delete this if to get sent 10 packets
     if (ip->proto == IPPROTO_ICMP) {   // daca vine IP + ICMP
 
         struct in_addr this_router_ip;
         inet_aton(get_interface_ip(m.interface), &this_router_ip);
 
-        // TODO bag in functie
         if (memcmp(ip->daddr, &this_router_ip.s_addr, 4) == 0 && icmp_hdr->type == ICMP_ECHO) {   // daca este adresat routerului ECHO Request
-            printf(" \n   ICMP    \n");
-
             m.len = sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr);
 
 //            // IP
@@ -363,14 +349,14 @@ void process_ip(packet m, struct arp_vector *arp_table, struct route_element* ro
     }
 
 
-    __u16 control_sum =  ip->csum;   // TODO ajust
+    __u16 control_sum =  ip->csum;   // check the sum
     ip->csum = 0;
     if (control_sum != ip_checksum(ip, sizeof(struct ip_hdr))) {
         return;
     }
 
     struct route_element * next_hop = get_best_route(routing_table, *((uint32_t*)ip->daddr));
-    if (next_hop != NULL)
+    if (next_hop != NULL)  // check if host is unreachable
     {
         if (ip->ttl > 1) {
             ip->ttl--;
@@ -436,13 +422,11 @@ void process_ip(packet m, struct arp_vector *arp_table, struct route_element* ro
         else
         {
             send_timeout(m);
-            return;
         }
     }
     else
     {
         sent_host_unreachable(m);
-        return;
     }
 }
 
@@ -481,12 +465,13 @@ int main(int argc, char *argv[])
                     // primesc reply de la vreun host
                     // daca am mac destinatie, completez si il fau
                     // daca nu il am, trebuie obtinut prin broadcasting
-
                     process_arp_reply(m, arp_table, q);
                 }
                 break;
 
             case ETHERTYPE_IP:
+                // daca stiu mac trimit direct
+                // altfel fac arp request si bag in coada
                 process_ip(m, arp_table, routing_table, q);
                 break;
         }
