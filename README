@@ -1,0 +1,38 @@
+Algoritm:
+
+    1 primesc pachet
+    2 verific daca este IP sau ARP
+
+                        ARP - Request :
+
+        2.1   verific daca este adresat routerului
+        2.2   interschim mac sursa cu destinatie
+        2.3   completez sursa cu mac router si trimit
+
+
+                        ARP - Reply :
+
+        2.1   completez tabela arp cu datele primite
+        2.2   cat timp am mesaje in coada carora le stiu mac destinatie,
+              le completez mac-ul din arp table si trimit
+
+
+                        IP :
+
+        2.1   verific daca este ICMP ECHO adresat routerului si trimit reply
+        2.2   verific checksum, dau drop daca nu e bun
+        2.3   verific daca routing table contine next hop pt ip destinatie
+              si trimit host unreachable in caz contrar
+        2.4   verific ttl, si il decrementez daca e > 1, altfel trimit time-excedeed
+        2.5   verific daca am mac destinatie in arp table, il completez si il trimit,
+              altfel pun mesaj in coada si fac un arp request broadcast ca sa-l aflu
+
+    3 ciclez
+
+
+Probleme :
+    1.) cautare binara in tabela de routare ======>  am cautat liniar
+    2.) wrong checksum  =====> l-am calculat la final
+    3.) am copiat struct ip_hdr din lab, si ceva nu mergea bine in memorie ===> header sistem
+    4.) uneori pachetele erau completate aiurea  =======> memset
+

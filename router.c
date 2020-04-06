@@ -443,9 +443,6 @@ int main(int argc, char *argv[])
 
     while (1) {
         struct ether_header *eth_hdr_response;
-        struct iphdr *ip_hdr_response;
-        struct icmphdr *icmp_hdr_response;
-        struct _arp_hdr *arp_hdr_response;
 
         rc = get_packet(&m);
         DIE(rc < 0, "get_message");
